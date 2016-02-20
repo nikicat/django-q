@@ -10,25 +10,25 @@ except ImportError:
 
 
 class Redis(Broker):
-    def __init__(self, list_key=Conf.PREFIX):
-        super(Redis, self).__init__(list_key='django_q:{}:q'.format(list_key))
+    def get_key(self):
+        return 'django_q:{}:q'.format(self.list_key)
 
     def enqueue(self, task):
-        return self.connection.rpush(self.list_key, task)
+        return self.connection.rpush(self.get_key(), task)
 
     def dequeue(self):
-        task = self.connection.blpop(self.list_key, 1)
+        task = self.connection.blpop(self.get_key(), 1)
         if task:
             return [(None, task[1])]
 
     def queue_size(self):
-        return self.connection.llen(self.list_key)
+        return self.connection.llen(self.get_key())
 
     def delete_queue(self):
-        return self.connection.delete(self.list_key)
+        return self.connection.delete(self.get_key())
 
     def purge_queue(self):
-        return self.connection.ltrim(self.list_key, 1, 0)
+        return self.connection.ltrim(self.get_key(), 1, 0)
 
     def ping(self):
         try:

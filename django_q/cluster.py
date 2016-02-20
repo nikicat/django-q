@@ -33,11 +33,11 @@ import tasks
 from django_q.conf import Conf, logger, psutil, get_ppid, rollbar
 from django_q.models import Task, Success, Schedule
 from django_q.status import Stat, Status
-from django_q.brokers import get_broker
+from django_q.brokers import get_broker, get_broker_queue
 
 
 class Cluster(object):
-    def __init__(self, broker=None):
+    def __init__(self, broker=None, workers=Conf.WORKERS):
         self.broker = broker or get_broker()
         self.sentinel = None
         self.stop_event = None
@@ -45,6 +45,7 @@ class Cluster(object):
         self.pid = current_process().pid
         self.host = socket.gethostname()
         self.timeout = Conf.TIMEOUT
+        self.workers = workers
         signal.signal(signal.SIGTERM, self.sig_handler)
         signal.signal(signal.SIGINT, self.sig_handler)
 
@@ -53,7 +54,8 @@ class Cluster(object):
         self.stop_event = Event()
         self.start_event = Event()
         self.sentinel = Process(target=Sentinel,
-                                args=(self.stop_event, self.start_event, self.broker, self.timeout))
+                                args=(self.stop_event, self.start_event, self.broker, self.timeout),
+                                kwargs={'pool_size': self.workers})
         self.sentinel.start()
         logger.info(_('Q Cluster-{} starting.').format(self.pid))
         while not self.start_event.is_set():
@@ -100,7 +102,7 @@ class Cluster(object):
 
 
 class Sentinel(object):
-    def __init__(self, stop_event, start_event, broker=None, timeout=Conf.TIMEOUT, start=True):
+    def __init__(self, stop_event, start_event, broker=None, timeout=Conf.TIMEOUT, start=True, pool_size=Conf.WORKERS):
         # Make sure we catch signals for the pool
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         signal.signal(signal.SIGTERM, signal.SIG_DFL)
@@ -112,7 +114,7 @@ class Sentinel(object):
         self.tob = timezone.now()
         self.stop_event = stop_event
         self.start_event = start_event
-        self.pool_size = Conf.WORKERS
+        self.pool_size = pool_size
         self.pool = []
         self.timeout = timeout
         self.task_queue = Queue(maxsize=Conf.QUEUE_LIMIT) if Conf.QUEUE_LIMIT else Queue()
@@ -498,7 +500,7 @@ def scheduler(broker=None):
         broker = get_broker()
     db.close_old_connections()
     try:
-        for s in Schedule.objects.exclude(repeats=0).filter(next_run__lt=timezone.now()):
+        for s in Schedule.objects.exclude(repeats=0).filter(queue=get_broker_queue(broker), next_run__lt=timezone.now()):
             args = ()
             kwargs = {}
             # get args, kwargs and hook

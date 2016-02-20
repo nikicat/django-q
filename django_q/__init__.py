@@ -17,6 +17,6 @@ if split_version[1][0] != '9' and split_version[1][:2] != '10':
     from .models import Task, Schedule, Success, Failure
     from .cluster import Cluster
     from .status import Stat
-    from .brokers import get_broker
+    from .brokers import get_broker, get_broker_for_queue
 
 __all__ = ['conf', 'cluster', 'models', 'tasks']

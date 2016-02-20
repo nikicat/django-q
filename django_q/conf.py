@@ -157,6 +157,8 @@ class Conf(object):
     # to manage workarounds during testing
     TESTING = conf.get('testing', False)
 
+    QUEUES = conf.get('queues', {})
+
 
 # logger
 logger = logging.getLogger('django-q')

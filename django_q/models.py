@@ -126,6 +126,7 @@ class Schedule(models.Model):
     hook = models.CharField(max_length=256, null=True, blank=True, help_text='e.g. module.tasks.result_function')
     args = models.TextField(null=True, blank=True, help_text=_("e.g. 1, 2, 'John'"))
     kwargs = models.TextField(null=True, blank=True, help_text=_("e.g. x=1, y=2, name='John'"))
+    queue = models.CharField(max_length=100, default='default', help_text='e.g. urgent, background, etc.')
     ONCE = 'O'
     MINUTES = 'I'
     HOURLY = 'H'
