@@ -369,6 +369,11 @@ def worker(task_queue, result_queue, timer, timeout=Conf.TIMEOUT):
                 result = (e, False)
                 if rollbar:
                     rollbar.report_exc_info()
+                try:
+                    from raven.contrib.django.raven_compat.models import client
+                    client.captureException()
+                except ImportError:
+                    pass
         # We're still going
         if not result:
             db.close_old_connections()
@@ -381,6 +386,11 @@ def worker(task_queue, result_queue, timer, timeout=Conf.TIMEOUT):
                 result = ('{}'.format(e), False)
                 if rollbar:
                     rollbar.report_exc_info()
+                try:
+                    from raven.contrib.django.raven_compat.models import client
+                    client.captureException()
+                except ImportError:
+                    pass
         # Process result
         task['result'] = result[0]
         task['success'] = result[1]
