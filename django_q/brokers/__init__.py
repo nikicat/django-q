@@ -188,3 +188,11 @@ def get_broker(list_key=Conf.PREFIX):
     else:
         from brokers import redis_broker
         return redis_broker.Redis(list_key=list_key)
+
+
+def get_broker_for_queue(queue):
+    return get_broker('%s:%s' % (Conf.PREFIX, queue))
+
+
+def get_broker_queue(broker):
+    return broker.list_key.split(':')[-1]

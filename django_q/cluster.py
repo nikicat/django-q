@@ -33,7 +33,7 @@ import tasks
 from django_q.conf import Conf, logger, psutil, get_ppid, rollbar
 from django_q.models import Task, Success, Schedule
 from django_q.status import Stat, Status
-from django_q.brokers import get_broker
+from django_q.brokers import get_broker, get_broker_queue
 
 
 class Cluster(object):
@@ -487,7 +487,7 @@ def scheduler(broker=None):
         broker = get_broker()
     db.close_old_connections()
     try:
-        for s in Schedule.objects.exclude(repeats=0).filter(next_run__lt=timezone.now()):
+        for s in Schedule.objects.exclude(repeats=0).filter(queue=get_broker_queue(broker), next_run__lt=timezone.now()):
             args = ()
             kwargs = {}
             # get args, kwargs and hook
